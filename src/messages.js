@@ -409,6 +409,75 @@ MessageList.init()
 Object.seal(MessageList)
 
 document.addEventListener('message_control', ev=>{
-	if (ev.detail.action=='info')
-		alert(JSON.stringify(ev.detail.data, null, 1)) // <small heart>
+	if (ev.detail.action == 'info') {
+		// MVP. dont attack me or hurt me
+		const d = document.createElement('dialog')
+		
+		const t = document.createElement('table')
+		for (const key in ev.detail.data) {
+			const value = ev.detail.data[key]
+			const r = t.insertRow()
+			const k = r.insertCell()
+			k.textContent = key
+			const v = r.insertCell()
+			if (!!value && ('object' == typeof value) && Object.keys(value).length > 0) {
+				v.textContent = '{'
+				const value2 = value
+				for (const key in value2) {
+					const value = value2[key]
+					const r = t.insertRow()
+					const k = r.insertCell()
+					k.textContent = key
+					k.style.textAlign = 'end'
+					const v = r.insertCell()
+					if ('string' == typeof value) {
+						const tt = document.createElement('code')
+						tt.textContent = value
+						v.append('"')
+						v.appendChild(tt)
+						v.append('"')
+					} else {
+						v.textContent = JSON.stringify(value)
+					}
+				}
+				const rend = t.insertRow()
+				rend.insertCell()
+				const vend = rend.insertCell()
+				vend.textContent = '}'
+			} else if ('string' == typeof value) {
+				const tt = document.createElement('code')
+				tt.textContent = value
+				v.append('"')
+				v.appendChild(tt)
+				v.append('"')
+			} else {
+				v.textContent = JSON.stringify(value)
+			}
+		}
+		
+		const f = document.createElement('form')
+		f.method = 'dialog'
+		
+		for (const bname in (globalPostActions ?? {})) {
+			const btrig = globalPostActions[bname]
+			const btn = document.createElement('button')
+			btn.textContent = bname
+			btn.addEventListener('click', e => btrig(ev.detail.data))
+			f.appendChild(btn)
+		}
+		
+		const ok = document.createElement('button')
+		ok.textContent = 'ok'
+		ok.addEventListener('click', e => d.close())
+		f.appendChild(ok)
+		
+		d.appendChild(t)
+		d.appendChild(f)
+		
+		document.body.appendChild(d)
+		d.showModal()
+	}
+	// alert(JSON.stringify(ev.detail.data, null, 1)) // <small heart>
 })
+var globalPostActions = {}
+// globalPostActions['repeat message'] = (d) => TTSSystem.speakMessage(d);
