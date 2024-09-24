@@ -470,7 +470,10 @@ document.addEventListener('message_control', ev=>{
 		const ok = document.createElement('button')
 		ok.textContent = 'OKAY'
 		ok.style.float = 'right'
-		ok.addEventListener('click', e => d.close())
+		ok.addEventListener('click', e => {
+			d.close()
+			d.outerHTML = ''
+		})
 		f.appendChild(ok)
 		
 		d.appendChild(t)
