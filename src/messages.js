@@ -464,10 +464,12 @@ document.addEventListener('message_control', ev=>{
 			btn.textContent = bname
 			btn.addEventListener('click', e => btrig(ev.detail.data))
 			f.appendChild(btn)
+			f.append(' ')
 		}
 		
 		const ok = document.createElement('button')
-		ok.textContent = 'ok'
+		ok.textContent = 'OKAY'
+		ok.style.float = 'right'
 		ok.addEventListener('click', e => d.close())
 		f.appendChild(ok)
 		
@@ -480,4 +482,5 @@ document.addEventListener('message_control', ev=>{
 	// alert(JSON.stringify(ev.detail.data, null, 1)) // <small heart>
 })
 var globalPostActions = {}
-// globalPostActions['repeat message'] = (d) => TTSSystem.speakMessage(d);
+// globalPostActions['repeat message'] = (d) => TTSSystem.speakMessage(d)
+// globalPostActions['add ❤️ react'] = (d) => Req.request(`Shortcuts/message/${d['id']}/setengagement/reaction`, null, "❤️")
