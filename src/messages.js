@@ -405,41 +405,46 @@ MessageList.draw_block = function(comment, part) {
 	bridge: 𐀶` <i>[discord bridge]</i>`,
 })
 MessageList.draw_info_dialog = function(comment) {
-	const dialog = this()
+	const dialog = this.dialog()
 	dialog.addEventListener('close', _=>dialog.remove())
+	
+	const insertHeaderCell = function(row, index = -1) {
+		if (index < -1 || index > row.cells.length) {
+			throw DOMException('IndexSizeError')
+		} if (index < 0 || index >= row.cells.length) {
+			return row.appendChild(document.createElement('th'))
+		} else {
+			return row.insertBefore(document.createElement('th'), row.cells[index])
+		}
+	}
 	
 	/**
 		@argument {HTMLTableElement} table
 		@argument {Object} data
 	*/
-	function makeRecursiveTableRow(table, data, depth = 0, edit = false) {
+	function makeRecursiveTableRow(table, data, depth = 0) {
 		if (depth > 16) return
 		for (const [key, value] of Object.entries(data)) {
 			const tr = table.insertRow()
-			tr.dataset.depth = depth
-			const k = tr.insertCell()
+			tr.style.setProperty('--row-depth', depth)
+			const k = insertHeaderCell(tr)
 			k.textContent = key
-			k.style.fontStretch = '50%'
-			k.style.paddingInlineStart = `${depth / 2}em`
-			k.style.verticalAlign = 'top'
 			const v = tr.insertCell()
-			if (value && ('object'==typeof value) && Object.keys(value).length > 0) {
-				v.textContent = '{'
-				makeRecursiveTableRow(table, value, depth + 1, edit)
+			if (value === null) {
+				v.textContent = 'null'
+			} else if (('object'==typeof value || 'array'==typeof value) && Object.keys(value).length > 0) {
+				v.textContent = 'object'==typeof value ? '{' : '['
+				makeRecursiveTableRow(table, value, depth + 1)
 				const trend = table.insertRow()
-				const tdend = trend.insertCell()
+				const tdend = insertHeaderCell(trend)
 				tdend.colSpan = 2
-				tdend.style.paddingInlineStart = `${depth / 2}em`
-				tdend.textContent = '}'
-			} else if (edit) {
-				
+				tr.style.setProperty('--row-depth', depth)
+				tdend.textContent = 'object'==typeof value ? '}' : ']'
 			} else if ('string'==typeof value) {
 				// v.append('"')
 				if (value.length > 80 || value.includes('\n')) {
 					const tt = document.createElement('pre')
 					tt.textContent = value
-					tt.style.whiteSpace = 'pre-line'
-					tt.style.maxWidth = '80ch'
 					v.appendChild(tt)
 				} else {
 					const tt = document.createElement('code')
@@ -467,13 +472,18 @@ MessageList.draw_info_dialog = function(comment) {
 	form.appendChild(form.firstChild) // (the ok button)
 	
 	return dialog
-}.bind(𐀶`
+}.bind({
+	dialog: 𐀶`
 <dialog class='message-info'>
-	<table class='message-info-table' style='border-collapse: collapse'></table>
+	<table></table>
 	<form method=dialog>
-		<button class='message-info-dismiss' style='float: right'>OKAY</button>
+		<button class='message-info-dismiss'>OKAY</button>
 	</form>
-</dialog>`)
+</dialog>`,
+	row: 𐀶`
+		<tr><th>
+`
+})
 
 MessageList.init()
 Object.seal(MessageList)

@@ -1160,6 +1160,50 @@ not-sidebar {
 	word-spacing: -0.375ch;
 }
 
+dialog {
+	padding: 1em;
+}
+.message-info table {
+	border-collapse: collapse;
+}
+.message-info table th {
+	font-stretch: condensed;
+	text-align: left;
+	vertical-align: top;
+	padding-inline-start: calc(var(--row-depth) * 0.5em);
+	padding-inline-end: 0.25em;
+}
+.message-info table tr:not(:last-child) {
+	border-bottom: dotted 1px var(--T-border-color);
+}
+.message-info table pre {
+	white-space: pre-wrap;
+	max-width: 80ch;
+}
+.message-info form:last-child {
+	display: block;
+	
+	margin-inline: -1em;
+	margin-block-start: 1em;
+	margin-block-end: -1em;
+	padding: 1em;
+	
+	background-color: var(--bar-bg);
+	border-top: dashed 1px var(--T-border-color);
+	
+	font-size: inherit;
+}
+.message-info form .message-info-dismiss {
+	/* color: red; */
+	font-weight: bold;
+	float: right;
+}
+.message-info form::after {
+	content: '';
+	display: block;
+	clear: both;
+}
+
 view-header .slot-close {
 	color: red;
 	font-weight: bold;
