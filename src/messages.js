@@ -404,86 +404,87 @@ MessageList.draw_block = function(comment, part) {
 	nickname: 𐀶` <i>(<span class='pre'></span>)</i>`,
 	bridge: 𐀶` <i>[discord bridge]</i>`,
 })
+MessageList.draw_info_dialog = function(comment) {
+	const dialog = this()
+	dialog.addEventListener('close', _=>dialog.remove())
+	
+	/**
+		@argument {HTMLTableElement} table
+		@argument {Object} data
+	*/
+	function makeRecursiveTableRow(table, data, depth = 0, edit = false) {
+		if (depth > 16) return
+		for (const [key, value] of Object.entries(data)) {
+			const tr = table.insertRow()
+			tr.dataset.depth = depth
+			const k = tr.insertCell()
+			k.textContent = key
+			k.style.fontStretch = '50%'
+			k.style.paddingInlineStart = `${depth / 2}em`
+			k.style.verticalAlign = 'top'
+			const v = tr.insertCell()
+			if (value && ('object'==typeof value) && Object.keys(value).length > 0) {
+				v.textContent = '{'
+				makeRecursiveTableRow(table, value, depth + 1, edit)
+				const trend = table.insertRow()
+				const tdend = trend.insertCell()
+				tdend.colSpan = 2
+				tdend.style.paddingInlineStart = `${depth / 2}em`
+				tdend.textContent = '}'
+			} else if (edit) {
+				
+			} else if ('string'==typeof value) {
+				// v.append('"')
+				if (value.length > 80 || value.includes('\n')) {
+					const tt = document.createElement('pre')
+					tt.textContent = value
+					tt.style.whiteSpace = 'pre-line'
+					tt.style.maxWidth = '80ch'
+					v.appendChild(tt)
+				} else {
+					const tt = document.createElement('code')
+					tt.textContent = value
+					v.appendChild(tt)
+				}
+				// v.append('"')
+			} else {
+				v.textContent = JSON.stringify(value)
+			}
+		}
+	}
+	
+	const table = dialog.firstChild
+	makeRecursiveTableRow(table, comment)
+	
+	const form = table.nextSibling
+	for (const [bname, bfunc] of Object.entries(CustomMessageActions)) {
+		const btn = document.createElement('button')
+		btn.textContent = bname
+		btn.addEventListener('click', _=>bfunc(comment))
+		form.appendChild(btn)
+		form.append(' ')
+	}
+	form.appendChild(form.firstChild) // (the ok button)
+	
+	return dialog
+}.bind(𐀶`
+<dialog class='message-info'>
+	<table class='message-info-table' style='border-collapse: collapse'></table>
+	<form method=dialog>
+		<button class='message-info-dismiss' style='float: right'>OKAY</button>
+	</form>
+</dialog>`)
 
 MessageList.init()
 Object.seal(MessageList)
 
 document.addEventListener('message_control', ev=>{
 	if (ev.detail.action == 'info') {
-		// MVP. dont attack me or hurt me
-		const d = document.createElement('dialog')
-		
-		const t = document.createElement('table')
-		for (const key in ev.detail.data) {
-			const value = ev.detail.data[key]
-			const r = t.insertRow()
-			const k = r.insertCell()
-			k.textContent = key
-			const v = r.insertCell()
-			if (!!value && ('object' == typeof value) && Object.keys(value).length > 0) {
-				v.textContent = '{'
-				const value2 = value
-				for (const key in value2) {
-					const value = value2[key]
-					const r = t.insertRow()
-					const k = r.insertCell()
-					k.textContent = key
-					k.style.textAlign = 'end'
-					const v = r.insertCell()
-					if ('string' == typeof value) {
-						const tt = document.createElement('code')
-						tt.textContent = value
-						v.append('"')
-						v.appendChild(tt)
-						v.append('"')
-					} else {
-						v.textContent = JSON.stringify(value)
-					}
-				}
-				const rend = t.insertRow()
-				rend.insertCell()
-				const vend = rend.insertCell()
-				vend.textContent = '}'
-			} else if ('string' == typeof value) {
-				const tt = document.createElement('code')
-				tt.textContent = value
-				v.append('"')
-				v.appendChild(tt)
-				v.append('"')
-			} else {
-				v.textContent = JSON.stringify(value)
-			}
-		}
-		
-		const f = document.createElement('form')
-		f.method = 'dialog'
-		
-		for (const bname in (globalPostActions ?? {})) {
-			const btrig = globalPostActions[bname]
-			const btn = document.createElement('button')
-			btn.textContent = bname
-			btn.addEventListener('click', e => btrig(ev.detail.data))
-			f.appendChild(btn)
-			f.append(' ')
-		}
-		
-		const ok = document.createElement('button')
-		ok.textContent = 'OKAY'
-		ok.style.float = 'right'
-		ok.addEventListener('click', e => {
-			d.close()
-			d.outerHTML = ''
-		})
-		f.appendChild(ok)
-		
-		d.appendChild(t)
-		d.appendChild(f)
-		
-		document.body.appendChild(d)
-		d.showModal()
-	}
-	// alert(JSON.stringify(ev.detail.data, null, 1)) // <small heart>
+		const dialog = MessageList.draw_info_dialog(ev.detail.data)
+		document.body.appendChild(dialog)
+		dialog.showModal()
+	} // <small heart>
 })
-var globalPostActions = {}
-// globalPostActions['repeat message'] = (d) => TTSSystem.speakMessage(d)
-// globalPostActions['add ❤️ react'] = (d) => Req.request(`Shortcuts/message/${d['id']}/setengagement/reaction`, null, "❤️")
+var CustomMessageActions = {}
+// CustomMessageActions['repeat message'] = (d) => TTSSystem.speakMessage(d)
+// CustomMessageActions['add ❤️ react'] = (d) => Req.request(`Shortcuts/message/${d['id']}/setengagement/reaction`, null, "❤️")
