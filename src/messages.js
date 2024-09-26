@@ -404,30 +404,36 @@ MessageList.draw_block = function(comment, part) {
 	nickname: 𐀶` <i>(<span class='pre'></span>)</i>`,
 	bridge: 𐀶` <i>[discord bridge]</i>`,
 })
+
+/**
+	@param {HTMLTableRowElement} row
+	@param {int} data
+	@returns {HTMLTableCellElement}
+*/
+const _insertHeaderCell = function(row, index = -1) {
+	if (index < -1 || index > row.cells.length) {
+		throw DOMException('IndexSizeError')
+	} if (index < 0 || index >= row.cells.length) {
+		return row.appendChild(document.createElement('th'))
+	} else {
+		return row.insertBefore(document.createElement('th'), row.cells[index])
+	}
+}
+
 MessageList.draw_info_dialog = function(comment) {
 	const dialog = this.dialog()
 	dialog.addEventListener('close', _=>dialog.remove())
 	
-	const insertHeaderCell = function(row, index = -1) {
-		if (index < -1 || index > row.cells.length) {
-			throw DOMException('IndexSizeError')
-		} if (index < 0 || index >= row.cells.length) {
-			return row.appendChild(document.createElement('th'))
-		} else {
-			return row.insertBefore(document.createElement('th'), row.cells[index])
-		}
-	}
-	
 	/**
-		@argument {HTMLTableElement} table
-		@argument {Object} data
+		@param {HTMLTableElement} table
+		@param {Object} data
 	*/
 	function makeRecursiveTableRow(table, data, depth = 0) {
 		if (depth > 16) return
 		for (const [key, value] of Object.entries(data)) {
 			const tr = table.insertRow()
 			tr.style.setProperty('--row-depth', depth)
-			const k = insertHeaderCell(tr)
+			const k = _insertHeaderCell(tr)
 			k.textContent = key
 			const v = tr.insertCell()
 			if (value === null) {
@@ -436,9 +442,9 @@ MessageList.draw_info_dialog = function(comment) {
 				v.textContent = 'object'==typeof value ? '{' : '['
 				makeRecursiveTableRow(table, value, depth + 1)
 				const trend = table.insertRow()
-				const tdend = insertHeaderCell(trend)
+				const tdend = _insertHeaderCell(trend)
 				tdend.colSpan = 2
-				tr.style.setProperty('--row-depth', depth)
+				tdend.style.setProperty('--row-depth', depth)
 				tdend.textContent = 'object'==typeof value ? '}' : ']'
 			} else if ('string'==typeof value) {
 				// v.append('"')
@@ -497,4 +503,64 @@ document.addEventListener('message_control', ev=>{
 })
 var CustomMessageActions = {}
 // CustomMessageActions['repeat message'] = (d) => TTSSystem.speakMessage(d)
-// CustomMessageActions['add ❤️ react'] = (d) => Req.request(`Shortcuts/message/${d['id']}/setengagement/reaction`, null, "❤️")
+// CustomMessageActions['add ❤️ react'] = (d) => Req.request(`Shortcuts/message/${d.id}/setengagement/reaction`, null, "❤️")
+CustomMessageActions['copy link (range)'] = async function(d) {
+	let clipboard = ""
+	try { clipboard = await navigator.clipboard.readText() } catch {}
+	const [_=0, pid=-1, cid_unsplit=""] = clipboard.match(/^sbs:comments\/(\d+)\?ids=((?:\d+[-,]?)+)$/) || []
+	const cids = pid == d.contentId ? cid_unsplit.split(/[-,]/) : []
+	cids.push(d.id)
+	const separator = cids.length == 2 ? '-' : ','
+	await navigator.clipboard.writeText(`sbs:comments/${d.contentId}?ids=${cids.join(separator)}`)
+}
+/* CustomMessageActions['edit values'] = function (data) {
+	const dialog = 𐀶`
+<dialog class='message-info'>
+	<form method=dialog>
+		<table>
+		</table>
+		<button>Discard</button>
+		<button style='float: right' class='message-info-dismiss'>Save</button>
+	</form>
+</dialog>`()
+	dialog.returnValue = 'no edit'
+	const form = dialog.firstChild
+	const [table, discard, save] = form.children
+	const FIELDS = {
+		'a': { name: 'avatar' },
+		'n': { name: 'nickname' }
+	}
+	for (const [field, info] of Object.entries(FIELDS)) {
+		const row = table.insertRow()
+		const name = _insertHeaderCell(row)
+		name.textContent = info.name
+		const value = row.insertCell()
+		const input = document.createElement('input')
+		input.name = field
+		input.value = data.values[field] || ''
+		value.appendChild(input)
+	}
+	save.addEventListener('click', e=>{
+		e.preventDefault()
+		let changed = false
+		for (const field of Object.keys(FIELDS)) {
+			const v = form.elements[field].value
+			if (data.values[field] == v) continue
+			changed = true
+			if (v.length) data.values[field] = v
+			else delete data.values[field]
+		}
+		dialog.close(changed ? true : 'no edit')
+	})
+	dialog.addEventListener('close', _=>{
+		const returnValue = dialog.returnValue
+		dialog.remove()
+		if (returnValue == 'no edit') return
+		Req.send_message(data).do = (resp, err)=>{
+			if (err)
+				alert("Posting failed")
+		}
+	})
+	document.body.appendChild(dialog)
+	dialog.showModal()
+} */
