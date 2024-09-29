@@ -403,10 +403,17 @@ const Nav = NAMESPACE({
 	
 	start() {
 		// send users at ?page/123 to #page/123
-		if (window.location.hash=="" && window.location.search.length>1 && !window.location.search.startsWith("?dev")) {
+		if (window.location.hash=="" && window.location.search.length>1) {
 			let x = new URL(window.location)
-			x.hash = "#"+x.search.substring(1)
-			x.search = ""
+			const [localhost, dev] = [
+				x.searchParams.get('localhost'),
+				x.searchParams.has('dev')
+			]
+			x.searchParams.delete('localhost')
+			x.searchParams.delete('dev')
+			x.hash = "#"+x.search
+			if (localhost) x.searchParams.set('localhost', localhost)
+			if (dev) x.searchParams.set('dev')
 			window.history.replaceState(null, "sbs2", x.href)
 		}
 		
