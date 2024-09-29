@@ -483,7 +483,7 @@ MessageList.draw_info_dialog = function(comment) {
 <dialog class='message-info'>
 	<table></table>
 	<form method=dialog>
-		<button class='message-info-dismiss'>OKAY</button>
+		<button class='message-info-dismiss'>Dismiss</button>
 	</form>
 </dialog>`,
 	row: 𐀶`
@@ -513,22 +513,30 @@ CustomMessageActions['copy link (range)'] = async function(d) {
 	const separator = cids.length == 2 ? '-' : ','
 	await navigator.clipboard.writeText(`sbs:comments/${d.contentId}?ids=${cids.join(separator)}`)
 }
-/* CustomMessageActions['edit values'] = function (data) {
+CustomMessageActions['edit values'] = function (data) {
 	const dialog = 𐀶`
 <dialog class='message-info'>
+	<div>
+		<button>get from settings</button>
+		<button>put into settings</button>
+	</div>
 	<form method=dialog>
 		<table>
 		</table>
-		<button>Discard</button>
-		<button style='float: right' class='message-info-dismiss'>Save</button>
+		<div style='text-align: right'>
+			<button>Discard</button>
+			<button class='message-info-dismiss'>Save</button>
+		</div>
 	</form>
 </dialog>`()
-	dialog.returnValue = 'no edit'
-	const form = dialog.firstChild
-	const [table, discard, save] = form.children
+	dialog.addEventListener('close', _=>dialog.remove())
+	const [move_options, form] = dialog.children
+	const [table, save_options] = form.children
+	const [btn_get, btn_put] = move_options.children
+	const [discard, save] = save_options.children
 	const FIELDS = {
-		'a': { name: 'avatar' },
-		'n': { name: 'nickname' }
+		'a': { name: 'avatar', settings_name: 'avatar' },
+		'n': { name: 'nickname', settings_name: 'nickname' }
 	}
 	for (const [field, info] of Object.entries(FIELDS)) {
 		const row = table.insertRow()
@@ -537,30 +545,48 @@ CustomMessageActions['copy link (range)'] = async function(d) {
 		const value = row.insertCell()
 		const input = document.createElement('input')
 		input.name = field
-		input.value = data.values[field] || ''
+		input.dataset.settings_value = Settings.values[info.settings_name] || ''
+		input.dataset.message_value = data.values[field] || ''
+		input.value = input.dataset.message_value
 		value.appendChild(input)
 	}
-	save.addEventListener('click', e=>{
+	const flip_input_dataset = d => [d.settings_value, d.message_value] = [d.message_value, d.settings_value]
+	btn_get.addEventListener('click', e=>{
 		e.preventDefault()
-		let changed = false
+		for (const [field, {settings_name}] of Object.entries(FIELDS)) {
+			const el = form.elements[field]
+			el.value = el.dataset.settings_value
+			flip_input_dataset(el.dataset)
+		}
+		btn_put.disabled = !btn_put.disabled
+		btn_get.textContent = 'un' + btn_get.textContent
+	})
+	btn_put.addEventListener('click', e=>{
+		e.preventDefault()
+		for (const [field, {settings_name}] of Object.entries(FIELDS)) {
+			const el = form.elements[field]
+			const settings_field = Settings.fields.find(f=>f.name==settings_name)
+			settings_field.change('change', el.dataset.message_value)
+			settings_field.elem.value = settings_field.get_value()
+			flip_input_dataset(el.dataset)
+		}
+		btn_get.disabled = !btn_get.disabled
+		btn_put.textContent = 'un' + btn_put.textContent
+	})
+	const should_send = Array.prototype.some.bind(Object.keys(FIELDS), f=>data.values[f] == form.elements[f].value)
+	const commit_data = function() {
 		for (const field of Object.keys(FIELDS)) {
 			const v = form.elements[field].value
 			if (data.values[field] == v) continue
-			changed = true
 			if (v.length) data.values[field] = v
 			else delete data.values[field]
 		}
-		dialog.close(changed ? true : 'no edit')
-	})
-	dialog.addEventListener('close', _=>{
-		const returnValue = dialog.returnValue
-		dialog.remove()
-		if (returnValue == 'no edit') return
-		Req.send_message(data).do = (resp, err)=>{
+		Req.send_message(data).do = (_resp, err)=>{
 			if (err)
 				alert("Posting failed")
 		}
-	})
+	}
+	save.addEventListener('click', _=>should_send() && commit_data())
 	document.body.appendChild(dialog)
 	dialog.showModal()
-} */
+}
