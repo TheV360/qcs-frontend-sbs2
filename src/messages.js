@@ -105,6 +105,44 @@ class MessageList {
 		return part
 	}
 	
+	display_before(next,msg) {
+		if (next == this) {
+			// print('next isnt anything! easy mode')
+			return this.display_bottom(msg)
+		}
+		const block = next.elem.parentNode.parentNode
+		const at_end_of_block = next.elem.parentNode.firstChild == next.elem
+		const prev = next.prev
+		const merges_with_prev = this.check_merge(prev.data, msg)
+		let part = this.add_part(msg, prev, next)
+		if (this.check_merge(msg, next.data)) {
+			// print('insert part! easy mode')
+			next.elem.before(part.elem)
+		} else if (at_end_of_block) {
+			// print('new block before block')
+			if (merges_with_prev) {
+				prev.elem.after(part.elem)
+			} else {
+				block.before(MessageList.draw_block(msg, part.elem))
+			}
+		} else {
+			if (merges_with_prev) {
+				// print('insert part! easy mode')
+				prev.elem.after(part.elem)
+			} else {
+				// print('splice...')
+				const msg_block = MessageList.draw_block(msg, part.elem)
+				const parts = Array.from(next.elem.parentNode.children)
+				const next_index = parts.indexOf(next.elem)
+				block.after(msg_block)
+				const splice_block = MessageList.draw_block(next.data)
+				msg_block.after(splice_block)
+				Element.prototype.append.apply(splice_block.lastChild, parts.splice(next_index))
+			}
+		}
+		return part
+	}
+	
 	// existing: Part - the part to replace
 	// msg: Message - the new message data
 	replace(existing, msg) {
@@ -126,8 +164,12 @@ class MessageList {
 		// normal edited message?
 		if (!msg.edited)
 			print("warning: duplicate message ", id)
-		if (msg.Author.merge_hash != existing.data.Author.merge_hash)
-			print("unimplemented: merge hash changed: ", id)
+		// fancy edited message?
+		if (msg.Author.merge_hash != existing.data.Author.merge_hash) {
+			let next = existing.next
+			this.remove(existing)
+			return this.display_before(next, msg)
+		}
 		let elem = this.draw_part(msg)
 		existing.elem.replaceWith(elem)
 		existing.elem = elem
@@ -388,7 +430,7 @@ MessageList.draw_block = function(comment, part) {
 	//time.dateTime = comment.createDate
 	time.textContent = "\t­\t"+Draw.time_string(comment.Author.date)
 	
-	e.lastChild.appendChild(part)
+	if (part) e.lastChild.appendChild(part)
 	
 	return e
 }.bind({
