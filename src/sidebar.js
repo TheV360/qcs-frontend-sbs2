@@ -84,6 +84,7 @@ const Sidebar = NAMESPACE({
 		})
 		View.bind_enter($searchInput, $searchButton.onclick)
 		$login_password.replaceWith(Draw.password_input('password'))
+		$loginPlace.textContent = Req.server.split('/api', 1)[0]
 		$loginForm.onsubmit = ev=>{
 			ev.preventDefault()
 			Req.get_auth($loginForm.username.value, $loginForm.password.value, $loginForm.long.checked).do = (resp, err)=>{
