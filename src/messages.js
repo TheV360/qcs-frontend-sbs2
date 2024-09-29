@@ -573,7 +573,7 @@ CustomMessageActions['edit values'] = function (data) {
 		btn_get.disabled = !btn_get.disabled
 		btn_put.textContent = 'un' + btn_put.textContent
 	})
-	const should_send = Array.prototype.some.bind(Object.keys(FIELDS), f=>data.values[f] == form.elements[f].value)
+	const should_send = Array.prototype.some.bind(Object.keys(FIELDS), f=>data.values[f] != form.elements[f].value)
 	const commit_data = function() {
 		for (const field of Object.keys(FIELDS)) {
 			const v = form.elements[field].value
