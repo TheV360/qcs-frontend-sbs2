@@ -105,41 +105,44 @@ class MessageList {
 		return part
 	}
 	
-	display_before(next,msg) {
+	// next: the part to display the message before
+	display_before(next, msg) {
 		if (next == this) {
 			// print('next isnt anything! easy mode')
 			return this.display_bottom(msg)
 		}
-		const block = next.elem.parentNode.parentNode
-		const at_end_of_block = next.elem.parentNode.firstChild == next.elem
-		const prev = next.prev
-		const merges_with_prev = this.check_merge(prev.data, msg)
-		let part = this.add_part(msg, prev, next)
+		
+		const part = this.add_part(msg, prev, next)
 		if (this.check_merge(msg, next.data)) {
-			// print('insert part! easy mode')
+			// print('new message part can be part of next message block')
 			next.elem.before(part.elem)
-		} else if (at_end_of_block) {
-			// print('new block before block')
-			if (merges_with_prev) {
-				prev.elem.after(part.elem)
-			} else {
-				block.before(MessageList.draw_block(msg, part.elem))
-			}
-		} else {
-			if (merges_with_prev) {
-				// print('insert part! easy mode')
-				prev.elem.after(part.elem)
-			} else {
-				// print('splice...')
-				const msg_block = MessageList.draw_block(msg, part.elem)
-				const parts = Array.from(next.elem.parentNode.children)
-				const next_index = parts.indexOf(next.elem)
-				block.after(msg_block)
-				const splice_block = MessageList.draw_block(next.data)
-				msg_block.after(splice_block)
-				Element.prototype.append.apply(splice_block.lastChild, parts.splice(next_index))
-			}
+			return part
 		}
+		
+		const prev = next.prev
+		if (this.check_merge(prev.data, msg)) {
+			// print('new message part can be part of prev message block')
+			prev.elem.after(part.elem)
+			return part
+		}
+		
+		const next_block = next.elem.parentNode.parentNode
+		// Are `prev` and `next` effectively in separate message blocks?
+		// (Can't use `prev.elem` in the expr because it might be null)
+		if (next.elem.parentNode.firstChild == next.elem) {
+			// print('cannot merge with either, so create a new block before next message block')
+			next_block.before(MessageList.draw_block(msg, part.elem))
+		} else {
+			// print('splice (create a block inside an existing block, splitting it into two)...')
+			const block_containing_msg = MessageList.draw_block(msg, part.elem)
+			const parts = Array.from(next.elem.parentNode.children)
+			const next_index = parts.indexOf(next.elem)
+			next_block.after(block_containing_msg)
+			const splice_block = MessageList.draw_block(next.data)
+			block_containing_msg.after(splice_block)
+			Element.prototype.append.apply(splice_block.lastChild, parts.splice(next_index))
+		}
+		
 		return part
 	}
 	
