@@ -112,6 +112,7 @@ class MessageList {
 			return this.display_bottom(msg)
 		}
 		
+		const prev = next.prev
 		const part = this.add_part(msg, prev, next)
 		if (this.check_merge(msg, next.data)) {
 			// print('new message part can be part of next message block')
@@ -119,7 +120,6 @@ class MessageList {
 			return part
 		}
 		
-		const prev = next.prev
 		if (this.check_merge(prev.data, msg)) {
 			// print('new message part can be part of prev message block')
 			prev.elem.after(part.elem)
