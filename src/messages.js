@@ -106,13 +106,18 @@ class MessageList {
 	}
 	
 	// next: the part to display the message before
-	display_before(next, msg) {
-		if (next == this) {
-			// print('next isnt anything! easy mode')
-			return this.display_bottom(msg)
-		}
+	display_around(relative, msg, where = 'before') {
+		const [prev, next] = where == 'before'
+			? [relative.prev, relative]
+			: [relative, relative.next]
+		// know: `where` doesn't matter anymore
 		
-		const prev = next.prev
+		if (next == this) return this.display_bottom(msg)
+		if (prev == this) return this.display_top(msg)
+		// know: the [prev/next]s are not the ends, so they'll have `elem`s
+		
+		const same_block = prev.elem.parentNode == next.elem.parentNode
+		
 		const part = this.add_part(msg, prev, next)
 		if (this.check_merge(msg, next.data)) {
 			// print('new message part can be part of next message block')
@@ -129,7 +134,7 @@ class MessageList {
 		const next_block = next.elem.parentNode.parentNode
 		// Are `prev` and `next` effectively in separate message blocks?
 		// (Can't use `prev.elem` in the expr because it might be null)
-		if (next.elem.parentNode.firstChild == next.elem) {
+		if (!same_block) {
 			// print('cannot merge with either, so create a new block before next message block')
 			next_block.before(MessageList.draw_block(msg, part.elem))
 		} else {
@@ -171,7 +176,7 @@ class MessageList {
 		if (msg.Author.merge_hash != existing.data.Author.merge_hash) {
 			let next = existing.next
 			this.remove(existing)
-			return this.display_before(next, msg)
+			return this.display_around(next, msg)
 		}
 		let elem = this.draw_part(msg)
 		existing.elem.replaceWith(elem)
@@ -291,6 +296,21 @@ class MessageList {
 		let over = this.parts.length - this.max_parts
 		for (let i=0; i<over; i++)
 			this.remove(this.next)
+	}
+	
+	rethread(msg) {
+		const id = msg.id
+		const [min_id, max_id] = [
+			this.next.msg.id || -Infinity,
+			this.prev.msg.id || +Infinity
+		]
+		
+		if (id > max_id) return this.display_bottom(msg)
+		if (id < min_id) return this.display_top(msg)
+		
+		for (let m = this.prev.prev; m != this; m = m.prev) {
+			
+		}
 	}
 
 	// elem: <message-part> or null
