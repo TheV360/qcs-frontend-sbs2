@@ -105,7 +105,8 @@ class MessageList {
 		return part
 	}
 	
-	// next: the part to display the message before
+	// `relative`: the message to display the message `msg` around
+	// `where`: where around the message? either 'before'/'after'
 	display_around(relative, msg, where = 'before') {
 		const [prev, next] = where == 'before'
 			? [relative.prev, relative]
@@ -176,7 +177,7 @@ class MessageList {
 		if (msg.Author.merge_hash != existing.data.Author.merge_hash) {
 			let next = existing.next
 			this.remove(existing)
-			return this.display_around(next, msg)
+			return this.display_around(next, msg, 'before')
 		}
 		let elem = this.draw_part(msg)
 		existing.elem.replaceWith(elem)
@@ -234,8 +235,7 @@ class MessageList {
 			return null
 		
 		// rethreaded from another room
-		print("unimplemented: rethread ", id)
-		//this.rethread(msg)
+		this.rethread(msg)
 		return false
 	}
 	
@@ -299,18 +299,9 @@ class MessageList {
 	}
 	
 	rethread(msg) {
-		const id = msg.id
-		const [min_id, max_id] = [
-			this.next.msg.id || -Infinity,
-			this.prev.msg.id || +Infinity
-		]
-		
-		if (id > max_id) return this.display_bottom(msg)
-		if (id < min_id) return this.display_top(msg)
-		
-		for (let m = this.prev.prev; m != this; m = m.prev) {
-			
-		}
+		let pivot = this.prev
+		while (pivot != this && pivot.data.id > msg.id) pivot = pivot.prev
+		return this.display_around(pivot, msg, 'after')
 	}
 
 	// elem: <message-part> or null
