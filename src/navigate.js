@@ -405,15 +405,15 @@ const Nav = NAMESPACE({
 		// send users at ?page/123 to #page/123
 		if (window.location.hash=="" && window.location.search.length>1) {
 			let x = new URL(window.location)
-			const [localhost, dev] = [
+			const [localhost, api] = [
 				x.searchParams.get('localhost'),
-				x.searchParams.has('dev')
+				x.searchParams.has('api')
 			]
 			x.searchParams.delete('localhost')
-			x.searchParams.delete('dev')
+			x.searchParams.delete('api')
 			x.hash = "#"+x.search
 			if (localhost) x.searchParams.set('localhost', localhost)
-			if (dev) x.searchParams.set('dev')
+			if (api) x.searchParams.set('api')
 			window.history.replaceState(null, "sbs2", x.href)
 		}
 		

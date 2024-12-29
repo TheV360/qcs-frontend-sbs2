@@ -143,9 +143,9 @@ const Req = { // this stuff can all be static methods on ApiRequest maybe?
 	ws_protocol: OPTS.has('localhost') ? 'ws://' : 'wss://',
 	server: OPTS.has('localhost')
 		? `localhost:${OPTS.get('localhost')}/api`
-		: OPTS.has('dev')
-			? "oboy.smilebasicsource.com/api"
-			: "qcs.shsbs.xyz/api",
+		: OPTS.has('api')
+			? `${OPTS.get('api')}/api`
+			: 'qcs.shsbs.xyz/api',
 	
 	get storage_key() {
 		return `token-${this.server}`
