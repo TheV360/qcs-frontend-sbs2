@@ -525,6 +525,24 @@ Settings.add({
 		}
 	},
 })
+Settings.add({
+	name: 'notify', label: "Notify", type: 'select',
+	options: ['off', 'browser notifications'],
+	update(value, type) {
+		if (value=='browser notifications') {
+			Notification.requestPermission().then((permission) => {
+				print(`browser notifications permission ${permission}`)
+				if (permission == 'granted') return
+				
+				print("can't send notifications in this state! please clear permissions settings and try again!")
+				value = 'off'
+				const settings_field = Settings.fields.find(f=>f.name=='notify')
+				settings_field.change('change', value)
+				settings_field.elem.value = value
+			})
+		}
+	}
+})
 /*Settings.add({
 	name: 'big_avatar',
 	label: "Big Avatar",
