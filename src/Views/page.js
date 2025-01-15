@@ -294,6 +294,7 @@ class PageView extends BaseView {
 		
 		this.scroller.after_print(x)
 		
+		View.browser_notification(comments)
 		if (last_new)
 			View.comment_notification(last_new)
 	}

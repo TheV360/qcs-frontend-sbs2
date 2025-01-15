@@ -182,45 +182,65 @@ const View = NAMESPACE({
 	},
 	
 	current_notification: null,
-	comment_notification(comment) {
-		const avatar_url = Draw.avatar_url(comment.Author, 100)
-		this.title_notification(comment.text, avatar_url)
-		if (Settings.values.notify === 'browser notifications') {
-			let comments = [ comment ]
-			if (this.current_notification) {
-				comments = this.current_notification.data.concat(comments)
-				this.current_notification.close()
-				this.current_notification = null
-			}
-			
-			const get_username = c => c.Author.nickname || c.Author.username
-			const get_censored_text = t => t.replace(/^\\h(\[.*?\])?[^]*/, "<spoiler $1>")
-			
-			const single_user = comments.every(c => c.createUserId == comment.createUserId)
-			let usernames = single_user ? get_username(comment) : comments.map(get_username).join(", ")
-			const title = `${usernames} in [${comment.Author.page_name}]`
-			
-			let sum_text
-			if (single_user)
-				sum_text = comments.reduce((sum, comment) => sum + (sum ? "\n" : "") + get_censored_text(comment.text), "")
-			else
-				sum_text = comments.reduce(([sum, last_uid], comment) => [
-					sum + ((last_uid != comment.createUserId) ? `\n• ${get_username(comment)}\n` : "\n") + get_censored_text(comment.text),
-					comment.createUserId
-				], ["", null])[0]
-			
-			this.current_notification = new Notification(
-				title,
-				{
-					body: sum_text,
-					badge: "resource/iconbig.png",
-					icon: avatar_url,
-					data: comments,
-				}
-			)
-			this.current_notification.addEventListener('click', e => this.current_notification = null)
-			this.current_notification.addEventListener('close', e => this.current_notification = null)
+	browser_notification(comments) {
+		if (Settings.values.notify != 'browser notifications') return
+		if (comments.length == 0) return
+		
+		const get_username = c => c.Author.nickname || c.Author.username
+		const get_censored_text = t => t.replace(/^\\h(\[.*?\])?[^]*/, "<spoiler $1>")
+		
+		const unique_map = (arr, map) => {
+			const arr2 = arr.map(map)
+			return (el, i) => i == 0 || arr2.lastIndexOf(arr2[i], i - 1) == -1
 		}
+		const unique = (el, i, arr) => i == 0 || arr.lastIndexOf(el, i - 1) == -1
+		
+		if (this.current_notification) {
+			comments = this.current_notification.data.concat(comments)
+			this.current_notification.close()
+			this.current_notification = null
+		}
+		
+		comments = comments
+			.filter(unique_map(comments, c => c.createUserId))
+			.sort((c1, c2) => c1.createUserId - c2.createUserId)
+		const last_comment = comments[comments.length - 1]
+		
+		const single_user = comments.every(comment => comment.createUserId == last_comment.createUserId)
+		let usernames = single_user ? get_username(last_comment) : comments.map(get_username).filter(unique).join(", ")
+		const title = `${usernames} in [${last_comment.Author.page_name}]`
+		
+		let body = ""
+		let last_uid = single_user ? last_comment.createUserId : null
+		for (const comment of comments) {
+			if (body.length)
+				body += "\n"
+			
+			if (last_uid != comment.createUserId)
+				body += `• ${get_username(comment)}\n`
+			
+			body += get_censored_text(comment.text)
+			
+			last_uid = comment.createUserId
+		}
+		
+		const avatar_url = Draw.avatar_url(last_comment.Author)
+		
+		this.current_notification = new Notification(
+			title,
+			{
+				body: body,
+				badge: "resource/iconbig.png",
+				icon: avatar_url,
+				data: comments,
+			}
+		)
+		this.current_notification.addEventListener('click', e => this.current_notification = null)
+		// this.current_notification.addEventListener('close', e => this.current_notification = null)
+	},
+	
+	comment_notification(comment) {
+		this.title_notification(comment.text, Draw.avatar_url(comment.Author))
 	},
 	
 	// temporarily set <title> and favicon, for displaying a notification
